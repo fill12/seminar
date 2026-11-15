@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Certificate Manager</title>
+<link rel="stylesheet" href="assets/theme.css">
+<script src="config.js"></script>
+<style>
+  .site-header { padding:22px 20px 70px; }
+  .site-header .inner { display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap; text-align:left; }
+  .mini { display:flex; align-items:center; gap:14px; }
+  .mini img { width:60px; height:60px; border-radius:50%; box-shadow:0 0 0 2px rgba(233,208,137,.85),0 4px 12px rgba(0,0,0,.35); }
+  .mini .school { font-size:27px; } .mini .sub { font-family:'Display',serif; font-weight:600; font-size:13px; letter-spacing:2px; color:var(--gold-light); text-transform:uppercase; margin-top:2px; }
+  .mini .evt { font-size:15px; color:#f0dcc0; margin-top:3px; }
+  .logout { color:#fff; text-decoration:none; border:1.5px solid rgba(233,208,137,.7); padding:9px 20px; border-radius:999px; font-family:'Display',serif; font-weight:600; font-size:14px; cursor:pointer; background:none; }
+  .wrap { max-width:1000px; margin:0 auto; padding:0 20px; }
+  main { margin-top:-42px; padding-bottom:50px; }
+  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; margin-bottom:18px; }
+  .stat { background:var(--card); border:1px solid var(--line); border-top:4px solid var(--gold); border-radius:14px; padding:16px 20px; box-shadow:0 6px 18px rgba(74,11,14,.08); }
+  .stat b { font-family:'Display',serif; font-size:34px; color:var(--maroon); display:block; line-height:1.1; }
+  .stat span { color:var(--muted); font-size:15px; }
+  .card { overflow:hidden; }
+  .tools { padding:16px 20px; border-bottom:1px solid var(--line); display:flex; gap:10px; flex-wrap:wrap; background:#fcf7ec; }
+  .tools input { flex:1; min-width:200px; padding:11px 15px; font-size:17px; }
+  .row { display:grid; grid-template-columns:1fr auto; gap:18px; align-items:center; padding:16px 20px; border-bottom:1px solid var(--line); }
+  .row:last-child { border-bottom:0; }
+  .qrcard { display:flex; gap:26px; align-items:center; padding:24px; margin-bottom:18px; flex-wrap:wrap; overflow:visible; }
+  .qrcard canvas { width:190px; height:190px; border:2px solid var(--gold); border-radius:12px; padding:8px; background:#fff; }
+  .qrcard h2 { margin:0 0 6px; font-family:'Display',serif; font-size:21px; color:var(--maroon); }
+  .qrcard p { margin:0 0 12px; color:var(--muted); font-size:16px; max-width:440px; }
+  .qrcard .url { font-family:ui-monospace,Consolas,monospace; font-size:13px; color:var(--gold-dark); word-break:break-all; margin-bottom:14px; }
+  .meta { font-size:14px; color:var(--muted); margin-top:5px; }
+  .pill { display:inline-block; font-size:12px; font-weight:700; padding:2px 10px; border-radius:99px; margin-left:8px; vertical-align:middle; }
+  .pill.ok { background:#e8f3e6; color:#25612f; } .pill.no { background:#f4ecdc; color:#8a6a20; }
+  .danger { color:#a3181d; border-color:#e6b9b6; }
+  .nm { font-family:'Display',serif; font-weight:600; font-size:19px; } .em { color:var(--muted); font-size:16px; margin-top:2px; }
+  .btns { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+  .btn { padding:9px 15px; font-size:13px; text-decoration:none; cursor:pointer; }
+  .empty { padding:44px 20px; text-align:center; color:var(--muted); }
+  .login { max-width:400px; margin:0 auto; padding:30px 28px; }
+  .login h2 { margin:0 0 4px; font-family:'Display',serif; color:var(--maroon); font-size:23px; }
+  .login input { margin:12px 0 14px; } .login .btn { width:100%; padding:13px; font-size:15px; }
+  @media (max-width:640px) { .row { grid-template-columns:1fr; } .btns { justify-content:flex-start; } .site-header .inner { justify-content:center; text-align:center; } .mini { flex-direction:column; text-align:center; } }
+  @media print { .site-header,.stats,.tools,#list,.logout,.qrcard .btns,.qrcard p { display:none !important; } body { background:#fff; } }
+</style>
+</head>
+<body>
+<header class="site-header"><div class="inner">
+  <div class="mini">
+    <img src="assets/seal.png" alt="">
+    <div>
+      <div class="school" id="school"></div>
+      <div class="sub">Certificate Manager</div>
+      <div class="evt" id="evt"></div>
+    </div>
+  </div>
+  <button class="logout" id="logout" style="display:none" onclick="logout()">Log out</button>
+</div><div class="gold-edge"></div></header>
+
+<main><div class="wrap">
+  <form class="login card gold-top" id="login">
+    <h2>Admin login</h2>
+    <input type="password" id="pw" placeholder="Password" autofocus>
+    <div class="err" id="err" style="display:none"></div>
+    <button class="btn primary" id="lbtn">Log in</button>
+  </form>
+
+  <div id="dash" style="display:none">
+    <div class="card gold-top qrcard">
+      <canvas id="regqr" data-size="600"></canvas>
+      <div>
+        <h2>Registration QR code (one for everyone)</h2>
+        <p>Show or print this QR code at the seminar. Participants scan it, fill in their name and email, and their certificate appears automatically.</p>
+        <div class="url" id="regurl"></div>
+        <div class="btns" style="justify-content:flex-start">
+          <button class="btn primary" onclick="downloadQR('regqr','seminar-registration-qr.png')">Download QR</button>
+          <button class="btn ghost" onclick="window.print()">Print QR</button>
+          <button class="btn ghost" onclick="copyLink(REG, this)">Copy link</button>
+          <a class="btn ghost" id="openform" target="_blank">Open form</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><b id="s1">0</b><span>Participants attended</span></div>
+      <div class="stat"><b id="s2">0</b><span>Registered today</span></div>
+      <div class="stat"><b id="s3">0</b><span>Certificates viewed</span></div>
+      <div class="stat"><b id="s4">0</b><span>Not yet viewed</span></div>
+    </div>
+
+    <div class="card">
+      <div class="tools">
+        <input type="text" id="search" placeholder="Search name or email..." oninput="render()">
+        <button class="btn ghost" onclick="exportCSV()">Export CSV</button>
+        <button class="btn ghost" onclick="load()">Refresh</button>
+      </div>
+      <div id="list"></div>
+    </div>
+  </div>
+</div></main>
+
+<script src="assets/qrcode.js"></script>
+<script src="assets/qr-helper.js"></script>
+<script>
+var A = window.APP, $ = function (i) { return document.getElementById(i); }, PEOPLE = [], PW = '';
+var BASE = location.href.replace(/[?#].*$/, '').replace(/[^\/]*$/, '');     // folder of this page
+var REG = BASE;                                                              // QR opens index.html
+$('school').textContent = A.school; $('evt').textContent = A.title + ' · ' + A.date;
+$('regurl').textContent = REG; $('openform').href = REG; $('regqr').setAttribute('data-qr', REG);
+
+function api(body) {
+  return fetch(A.scriptUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) })
+    .then(function (r) { return r.json(); });
+}
+function showErr(m) { var e = $('err'); e.textContent = m; e.style.display = m ? '' : 'none'; }
+function copyLink(u, b) { navigator.clipboard.writeText(u).then(function () { var t = b.textContent; b.textContent = 'Copied!'; setTimeout(function () { b.textContent = t; }, 1200); }); }
+
+$('login').addEventListener('submit', function (ev) {
+  ev.preventDefault(); showErr('');
+  if (A.scriptUrl.indexOf('PASTE_') === 0) { showErr('Paste the Apps Script URL in config.js first.'); return; }
+  PW = $('pw').value; $('lbtn').disabled = true;
+  load(true);
+});
+function logout() { sessionStorage.removeItem('pw'); location.reload(); }
+
+function load(fromLogin) {
+  api({ action: 'list', password: PW }).then(function (d) {
+    $('lbtn').disabled = false;
+    if (!d.ok) { if (fromLogin) showErr(d.error || 'Error'); else logout(); return; }
+    sessionStorage.setItem('pw', PW);
+    PEOPLE = d.people; $('login').style.display = 'none'; $('dash').style.display = ''; $('logout').style.display = '';
+    renderAllQR(); render();
+  }).catch(function () { $('lbtn').disabled = false; showErr('Could not connect. Check config.js and your internet.'); });
+}
+(function () { var s = sessionStorage.getItem('pw'); if (s && A.scriptUrl.indexOf('PASTE_') !== 0) { PW = s; load(); } })();
+
+function todayStr() { var d = new Date(Date.now() + (480 + new Date().getTimezoneOffset()) * 60000); return d.toISOString().slice(0, 10); }
+function render() {
+  var q = $('search').value.toLowerCase(), t = todayStr();
+  var viewed = PEOPLE.filter(function (p) { return p.views > 0; }).length;
+  $('s1').textContent = PEOPLE.length;
+  $('s2').textContent = PEOPLE.filter(function (p) { return p.registered_at.slice(0, 10) === t; }).length;
+  $('s3').textContent = viewed; $('s4').textContent = PEOPLE.length - viewed;
+  var box = $('list'); box.innerHTML = '';
+  var shown = PEOPLE.filter(function (p) { return (p.name + ' ' + p.email).toLowerCase().indexOf(q) > -1; });
+  if (!shown.length) { var e = document.createElement('div'); e.className = 'empty'; e.textContent = PEOPLE.length ? 'No match.' : 'No participants yet. They will appear here as soon as they scan the QR code and submit the form.'; box.appendChild(e); return; }
+  shown.forEach(function (p) {
+    var row = document.createElement('div'); row.className = 'row';
+    var left = document.createElement('div');
+    var nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = p.name;
+    var pill = document.createElement('span'); pill.className = 'pill ' + (p.views ? 'ok' : 'no'); pill.textContent = p.views ? 'Viewed certificate' : 'Not viewed'; nm.appendChild(pill);
+    var em = document.createElement('div'); em.className = 'em'; em.textContent = p.email;
+    var mt = document.createElement('div'); mt.className = 'meta'; mt.textContent = 'Registered ' + p.registered_at + (p.views ? ' · opened ' + p.views + '×' : '');
+    left.appendChild(nm); left.appendChild(em); left.appendChild(mt);
+    var btns = document.createElement('div'); btns.className = 'btns';
+    var v = document.createElement('a'); v.className = 'btn primary'; v.target = '_blank'; v.textContent = 'View certificate';
+    v.href = BASE + 'certificate.html?id=' + p.id + '&noview=1';
+    var c = document.createElement('button'); c.className = 'btn ghost'; c.textContent = 'Copy link';
+    c.onclick = function () { copyLink(BASE + 'certificate.html?id=' + p.id, c); };
+    var d = document.createElement('button'); d.className = 'btn ghost danger'; d.textContent = 'Remove';
+    d.onclick = function () {
+      if (!confirm('Remove ' + p.name + ' from the list?')) return;
+      api({ action: 'delete', password: PW, id: p.id }).then(load);
+    };
+    btns.appendChild(v); btns.appendChild(c); btns.appendChild(d);
+    row.appendChild(left); row.appendChild(btns); box.appendChild(row);
+  });
+}
+function exportCSV() {
+  var rows = [['Name', 'Email', 'Registered', 'Views']].concat(PEOPLE.map(function (p) { return [p.name, p.email, p.registered_at, p.views]; }));
+  var csv = rows.map(function (r) { return r.map(function (x) { return '"' + String(x).replace(/"/g, '""') + '"'; }).join(','); }).join('\r\n');
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv' })); a.download = 'participants.csv'; a.click();
+}
+</script>
+</body>
+</html>

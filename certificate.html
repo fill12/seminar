@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Certificate</title>
+<script src="config.js"></script>
+<style>
+  @font-face { font-family:'Script'; src:url('assets/fonts/great-vibes-latin-400-normal.woff2') format('woff2'); font-display:block; }
+  @page { size: A4 landscape; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; }
+  body { background:#ece8e1; font-family:system-ui,Arial,sans-serif; }
+  .toolbar { text-align:center; padding:16px 12px 12px; }
+  .toolbar button { background:#7a1115; color:#fff; border:0; padding:12px 28px; border-radius:999px; font-size:16px; cursor:pointer; box-shadow:0 3px 10px rgba(0,0,0,.25); }
+  .toolbar button:hover { background:#951a1f; }
+  .toolbar small { display:block; margin-top:8px; color:#6b6258; font-size:13px; }
+  .stage { display:flex; justify-content:center; padding:0 12px 28px; }
+  .scaler { position:relative; overflow:hidden; background:#fff; box-shadow:0 10px 40px rgba(0,0,0,.28); }
+  .cert { position:absolute; left:0; top:0; width:2000px; height:1414px; transform-origin:0 0; overflow:hidden;
+          -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .cert > * { position:absolute; }
+  .bg { left:0; top:0; width:2000px; height:1414px; display:block; }
+  .namewrap { left:290px; width:1500px; top:598px; height:150px; display:flex; align-items:center; justify-content:center; }
+  .name { font-family:'Script',cursive; font-size:124px; line-height:150px; color:#5e0f13; white-space:nowrap; }
+  .msg { text-align:center; padding:60px 20px; color:#6b6258; font-size:18px; }
+  .msg a { color:#7a1115; }
+  @media print {
+    body { background:#fff; } .toolbar, .msg { display:none; } .stage { padding:0; display:block; }
+    .scaler { box-shadow:none; width:297mm !important; height:210mm !important; }
+    .cert { transform:scale(.56126) !important; }
+  }
+</style>
+</head>
+<body>
+<div class="msg" id="msg">Loading your certificate…</div>
+<div class="toolbar" id="toolbar" style="display:none">
+  <button onclick="window.print()">⬇ Download / Print as PDF</button>
+  <small>In the print window choose “Save as PDF”, paper A4, landscape, margins “None”.</small>
+</div>
+<div class="stage" id="stage" style="display:none">
+<div class="scaler" id="scaler">
+<div class="cert" id="cert">
+  <img class="bg" src="assets/certificate-bg.png" alt="Certificate of Participation">
+  <div class="namewrap"><div class="name" id="name"></div></div>
+</div></div></div>
+<script>
+(function () {
+  var W = 2000, H = 1414, $ = function (i) { return document.getElementById(i); };
+  var cert = $('cert'), box = $('scaler');
+  function fit() {
+    var n = $('name'), size = 124;
+    n.style.fontSize = size + 'px';
+    while (n.scrollWidth > 1400 && size > 50) { size -= 4; n.style.fontSize = size + 'px'; }
+    var s = Math.min((window.innerWidth - 24) / W, 0.72);
+    cert.style.transform = 'scale(' + s + ')';
+    box.style.width = (W * s) + 'px'; box.style.height = (H * s) + 'px';
+  }
+  window.addEventListener('resize', fit);
+  window.addEventListener('beforeprint', function () { cert.style.transform = ''; });
+  window.addEventListener('afterprint', fit);
+
+  function fail(t) { $('msg').innerHTML = ''; $('msg').appendChild(document.createTextNode(t + ' ')); var a = document.createElement('a'); a.href = 'index.html'; a.textContent = 'Register here'; $('msg').appendChild(a); }
+  var q = new URLSearchParams(location.search), id = q.get('id') || '';
+  if (!id) { try { id = (JSON.parse(localStorage.getItem('cert') || '{}')).id || ''; } catch (x) {} }
+  if (!id) { fail('Certificate not found.'); return; }
+  fetch(window.APP.scriptUrl + '?action=cert&id=' + encodeURIComponent(id) + (q.get('noview') ? '&noview=1' : ''))
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (!d.ok) { fail('Certificate not found.'); return; }
+      $('name').textContent = d.name; document.title = 'Certificate - ' + d.name;
+      $('msg').style.display = 'none'; $('toolbar').style.display = ''; $('stage').style.display = '';
+      fit();
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+    })
+    .catch(function () { fail('Could not load the certificate. Check your internet and refresh.'); });
+})();
+</script>
+</body>
+</html>

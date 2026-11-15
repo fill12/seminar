@@ -1,0 +1,44 @@
+STEP-BY-STEP: GitHub Pages + Google Sheet (para makita kung sino ang nag-register)
+Oras: mga 15 minuto. Kailangan: Google account at GitHub account.
+
+=== PART A: GOOGLE SHEET (ang listahan ng nag-register) ===
+1. Pumunta sa https://sheets.google.com > "Blank spreadsheet".
+2. Pangalanan sa taas: "Seminar Registrations".
+3. Menu: Extensions > Apps Script.
+4. Burahin ang lahat ng nasa editor.
+5. Buksan ang apps-script/Code.gs (Notepad ok), i-COPY ang LAHAT, i-PASTE sa editor.
+6. Sa unang linya: palitan ang 'PALITAN-MO-ITO' ng sarili mong password (ito ang password mo sa admin page).
+   Halimbawa: const ADMIN_PASSWORD = 'nvc-cthm-2026';
+7. I-save (Ctrl+S).
+8. I-click ang "Deploy" (kanang taas) > "New deployment".
+9. I-click ang gear icon > piliin ang "Web app".
+10. Execute as: "Me".  Who has access: "Anyone".  Click "Deploy".
+11. I-click ang "Authorize access" > piliin ang Google account > "Advanced" > "Go to ... (unsafe)" > "Allow".
+12. I-COPY ang "Web app URL" (nagtatapos sa /exec).
+
+=== PART B: I-CONNECT SA WEBSITE ===
+13. Buksan ang config.js (Notepad).
+14. Palitan ang PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE ng URL na kinopya mo (panatilihin ang quotes ' ').
+15. I-save.
+
+=== PART C: GITHUB ===
+16. github.com > Sign up/Login > "New repository" > Name: seminar > Public > Create.
+17. I-UNZIP muna ang folder na ito. Sa repo, click "uploading an existing file".
+18. I-drag ang LAHAT ng laman: index.html, admin.html, certificate.html, config.js, SETUP.txt, at ang folder na "assets".
+    (Hindi kailangang i-upload ang apps-script folder, pero ok lang kung kasama.)
+19. Click "Commit changes".
+20. Settings > Pages > Source: "Deploy from a branch" > Branch: main, folder: / (root) > Save.
+21. Maghintay ng 1-2 minuto. Ang site mo: https://USERNAME.github.io/seminar/
+
+=== PART D: GAMITIN ===
+- ADMIN PAGE: https://USERNAME.github.io/seminar/admin.html
+  Password = yung inilagay mo sa Code.gs. Dito makikita kung SINO ang nag-register, ang bilang, search,
+  View certificate, Remove, Export CSV, at ang QR code (Download/Print).
+- PARTICIPANTS: i-scan ang QR > ilagay ang pangalan at email > lalabas ang certificate > "Download / Print as PDF".
+- Makikita rin ang listahan mismo sa Google Sheet mo (tab na "Registrations").
+
+=== MGA PAALALA ===
+- Kapag nagbago ka ng Code.gs: Deploy > Manage deployments > i-edit (lapis) > Version: New version > Deploy. Pareho pa rin ang URL.
+- Kapag "Not set up yet" ang lumabas: hindi pa napalitan ang URL sa config.js.
+- Para isara ang registration: REGISTRATION_OPEN = false sa Code.gs (new version) at registrationOpen: false sa config.js.
+- I-test muna gamit ang 2-3 phone bago ang Nov 17, tapos burahin ang test accounts sa admin page.

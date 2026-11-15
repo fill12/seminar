@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Register - Seminar</title>
+<link rel="stylesheet" href="assets/theme.css">
+<script src="config.js"></script>
+<style>
+  .card { max-width:440px; width:calc(100% - 28px); margin:-46px auto 28px; padding:30px 26px 28px; }
+  .closed { text-align:center; color:var(--muted); padding:10px 0; font-size:18px; }
+  .closed b { font-family:'Display',serif; color:var(--maroon); font-size:21px; }
+  .submit[disabled] { opacity:.6; cursor:wait; }
+</style>
+</head>
+<body>
+<header class="site-header"><div class="inner">
+  <div class="brand">
+    <img src="assets/seal.png" alt="Seal">
+    <div class="school" id="school"></div>
+    <div class="college" id="college"></div>
+  </div>
+  <div class="ornament"><i></i></div>
+  <div class="event" id="title"></div>
+  <div class="when" id="when"></div>
+</div><div class="gold-edge"></div></header>
+
+<div class="card gold-top" id="card">
+  <div class="closed" id="closed" style="display:none"><b>Registration is closed.</b><br>Please contact the organizer.</div>
+  <div id="formwrap">
+    <h2 class="title">Get your certificate</h2>
+    <p class="hint">Fill in your details. Your name will appear on your certificate.</p>
+    <div class="known" id="known" style="display:none"></div>
+    <div class="err" id="err" style="display:none"></div>
+    <form id="f" autocomplete="on">
+      <label for="name">Full name</label>
+      <input type="text" id="name" name="name" placeholder="e.g. Juan Dela Cruz" required maxlength="80" autocomplete="name">
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" placeholder="you@example.com" required autocomplete="email">
+      <div class="hp"><input type="text" id="website" tabindex="-1" autocomplete="off"></div>
+      <button type="submit" class="submit" id="btn">Submit &amp; view certificate</button>
+    </form>
+  </div>
+</div>
+<div class="footer" id="footer"></div>
+
+<script>
+var A = window.APP, $ = function (i) { return document.getElementById(i); };
+$('school').textContent = A.school; $('college').textContent = A.college;
+$('title').textContent = A.title; $('when').textContent = A.date + ' · ' + A.venue;
+$('footer').textContent = A.school + ' · ' + A.college;
+document.title = 'Register - ' + A.title;
+if (!A.registrationOpen) { $('formwrap').style.display = 'none'; $('closed').style.display = ''; }
+
+try {
+  var saved = JSON.parse(localStorage.getItem('cert') || 'null');
+  if (saved && saved.id) {
+    var k = $('known'); k.style.display = '';
+    k.appendChild(document.createTextNode('You already registered as '));
+    var b = document.createElement('b'); b.textContent = saved.name; k.appendChild(b);
+    k.appendChild(document.createTextNode('. '));
+    var a = document.createElement('a'); a.href = 'certificate.html?id=' + encodeURIComponent(saved.id);
+    a.textContent = 'View my certificate →'; k.appendChild(a);
+  }
+} catch (x) {}
+
+function showErr(m) { var e = $('err'); e.textContent = m; e.style.display = m ? '' : 'none'; }
+$('f').addEventListener('submit', function (ev) {
+  ev.preventDefault(); showErr('');
+  if (A.scriptUrl.indexOf('PASTE_') === 0) { showErr('Not set up yet: paste the Apps Script URL in config.js.'); return; }
+  var btn = $('btn'); btn.disabled = true; btn.textContent = 'Please wait…';
+  fetch(A.scriptUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },   // avoids CORS preflight
+    body: JSON.stringify({ action: 'register', name: $('name').value, email: $('email').value, website: $('website').value })
+  }).then(function (r) { return r.json(); }).then(function (d) {
+    if (!d.ok) throw new Error(d.error || 'Error');
+    try { localStorage.setItem('cert', JSON.stringify({ id: d.id, name: d.name })); } catch (x) {}
+    location.href = 'certificate.html?id=' + encodeURIComponent(d.id);
+  }).catch(function (e) {
+    showErr(e && e.message && e.message !== 'Failed to fetch' ? e.message : 'Sorry, we could not save your registration. Please check your internet and try again.');
+    btn.disabled = false; btn.textContent = 'Submit & view certificate';
+  });
+});
+</script>
+</body>
+</html>
